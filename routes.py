@@ -422,6 +422,11 @@ def detail(post_id):
     category_obj = Category.query.get(post.category_id)
     is_gallery_category = category_obj.type == "photo" if category_obj else False
 
+     # ✅ 조회수 증가 (관리자 포함)
+    if request.method == "GET":
+        post.read_count += 1
+        db.session.commit()
+ 
     if request.method == "POST":
         user_id = session.get("user_id")
         comment = Comment(
@@ -432,10 +437,9 @@ def detail(post_id):
         db.session.add(comment)
         db.session.commit()
         flash("댓글이 등록되었습니다.", "success")
-        return redirect(url_for("post.detail", post_id=post.id))
+        return redirect(url_for("post.detail", post_id=post.id))    
 
     return render_template("detail.html", post=post, is_gallery_category=is_gallery_category)
-
 
 # 댓글 수정
 @post_bp.route("/comment/<int:comment_id>/edit", methods=["GET", "POST"])
