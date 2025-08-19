@@ -13,6 +13,7 @@ from flask_login import current_user
 from flask_login import LoginManager
 from extensions import db, login_manager
 from routes_account import account_bp
+from flask import Response
 
 
 import re
@@ -83,6 +84,12 @@ def inject_user():
 app.register_blueprint(admin_bp)
 app.register_blueprint(post_bp)
 app.register_blueprint(auth_bp)
+
+# ✅ robots.txt 라우트 추가
+@app.route("/robots.txt")
+def robots_txt():
+    content = "User-agent: *\nDisallow: /"
+    return Response(content, mimetype="text/plain")
 
 if __name__ == "__main__":
     with app.app_context():
