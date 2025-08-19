@@ -66,6 +66,7 @@
     .message {
       margin-top: 1rem;
       color: #ffcccb;
+      font-size: 0.9rem;
     }
 
     .back-link {
@@ -79,19 +80,25 @@
     .back-link:hover {
       text-decoration: underline;
     }
+
+    .info-text {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
   <div class="login-box">
     <h2>🔐 로그인</h2>
     <form method="POST" action="{{ url_for('auth.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">    
       <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
       <input type="text" name="username" placeholder="사용자명" required>
       <input type="password" name="password" placeholder="비밀번호" required>
       <button type="submit">로그인</button>
     </form>
 
-    
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
@@ -100,8 +107,12 @@
       {% endif %}
     {% endwith %}
 
-    <!-- 메인페이지로 돌아가기 링크 -->
+    <p class="info-text">
+      로그인하려면 관리자의 승인 완료가 필요합니다.
+    </p>
+
     <a href="{{ url_for('home') }}" class="back-link">← 메인으로 돌아가기</a>
+    <a href="{{ url_for('auth.signup') }}" class="back-link">회원가입 →</a>
   </div>
 </body>
 </html>

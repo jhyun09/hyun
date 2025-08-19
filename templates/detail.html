@@ -6,76 +6,158 @@
 {% block content %}
 <div class="container">
   <h2 class="post-title">{{ post.title }}</h2>
-  <div class="meta">
-    글쓴이: {{ post.author }} |
-    작성일: {{ post.date }} |
-    조회수: {{ post.read_count }}
+   <div class="meta-box">
+    <div class="meta-author"><span><strong>👤</strong> {{ post.author.username }}</span>
+     <span>| 작성일: {{ post.date.strftime('%Y-%m-%d %H:%M') }} | 조회수: {{ post.read_count }}</span>
+    </div>
   </div>
-
+ 
   <div class="content">
   {{ post.content
     | replace('<img', '<img class="zoomable" onclick="openZoomTab(this.src)"')
     | safe }}
   </div>
-
+<hr>
+  
   <button onclick="toggleHtml()" class="btn">🔍 HTML 보기</button>
   <pre id="html-source" style="display:none;"></pre>
 
+  
+<!-- 🔔 메시지 표시 -->
+ {% with messages = get_flashed_messages() %}
+   {% if messages %}
+     <div class="flash-messages" style="color: red; margin-bottom: 10px;">
+       {% for message in messages %}
+         <p>{{ message }}</p>
+       {% endfor %}
+
+       {% if post.attachment %}
+        <p>📎 첨부파일: <a href="{{ url_for('post.download_file', filename=post.attachment) }}">
+           {{ post.attachment_original or post.attachment }}
+            </a></p>
+       {% endif %}
+
+     </div>
+    {% endif %} 
+  {% endwith %}
+
+  <!-- 첨부파일 표시 -->
+  {% if post.attachment %}
+  <div>📎 첨부파일: 
+    <a href="{{ url_for('post.download_file', filename=post.attachment) }}">
+      {{ post.attachment_original or post.attachment }}
+    </a>
+  </div>
+  {% endif %}
+
+
+  <!-- 삭제 폼 -->
+
+<div class="meta-box delete-box">
   <form method="post" action="{{ url_for('post.delete', post_id=post.id) }}"
         onsubmit="return confirm('정말 삭제할까요?');"
-        class="delete-form" style="display: flex; align-items: center; gap: 10px;">
-    <input type="password" name="password" placeholder="비밀번호 입력" required
-           style="width: 180px; padding: 6px 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc;">
-    <div class="btn-group" style="display: flex; gap: 8px;">
+        class="delete-form">
+
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {% if post.password is not none and post.password != '' %}
+    <div class="delete-row">
+  <input type="password" name="password" placeholder="비밀번호 입력" required
+         class="password-input delete-password">
+  <div class="btn-group">
+    <button type="button"
+            onclick='location.href="{{ url_for("post.edit", post_id=post.id) }}"'
+            class="btn">✏️ 수정</button>
+    <button type="submit" class="btn btn-danger">🗑️ 삭제</button>
+  </div>
+</div>
+
+    {% else %}
+    <div class="btn-group">
       <button type="button"
               onclick='location.href="{{ url_for("post.edit", post_id=post.id) }}"'
               class="btn">✏️ 수정</button>
       <button type="submit" class="btn btn-danger">🗑️ 삭제</button>
     </div>
+    {% endif %}
   </form>
-
-  <a class="back-link" href="{{ url_for('post.index', category=post.category) }}">
-    ← {{ post.category }} 목록으로 돌아가기
+</div>
+      
+  <a class="back-link" href="{{ url_for('post.index', category=post.category.name) }}">
+    📂 목록으로 돌아가기
   </a>
 
   <hr>
 
   <h3>💬 댓글</h3>
 
-  {% if post.comments %}
-    {% for comment in post.comments %}
-      <div class="comment">
-        <strong>{{ comment.author }}</strong> |
-        <span class="comment-date">{{ comment.created_at }}</span>
-        <p>{{ comment.content | replace('\n', '<br>') | safe }}</p>
-        <div class="btn-group" style="display: inline-flex; gap: 8px; align-items: center;">
-          <form method="get" action="{{ url_for('post.edit_comment', comment_id=comment.id) }}">
-            <button type="submit" class="btn">✏️ 수정</button>
-          </form>
-          <form method="post" action="{{ url_for('post.delete_comment', comment_id=comment.id) }}"
-                onsubmit="return confirm('삭제할까요?');">
-            <button type="submit" class="btn btn-danger">🗑️ 삭제</button>
-          </form>
-        </div>
+{% if post.comments %}
+  {% for comment in post.comments %}
+    <div class="comment" id="comment-{{ comment.id }}">
+      <strong>{{ comment.author.username }}</strong> |
+      <span class="comment-date">{{ comment.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+      <p class="comment-content">{{ comment.content | replace('\n', '<br>') | safe }}</p>
+
+      <div class="btn-group" style="display: inline-flex; gap: 8px; align-items: center;">
+        <button class="btn" onclick="toggleEditForm({{ comment.id }})">✏️ 수정</button>
+
+        <form method="post" action="{{ url_for('post.delete_comment', comment_id=comment.id) }}"
+              onsubmit="return confirm('삭제할까요?');" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger">🗑️ 삭제</button>
+        </form>
       </div>
-    {% endfor %}
-  {% else %}
-    <p class="comment-empty">💬 아직 댓글이 없습니다.</p>
-  {% endif %}
 
-  <div class="comment-form">
-    <h4>댓글 작성하기</h4>
-    <form method="post">
-      <label for="author">작성자</label>
-      <input type="text" name="author" placeholder="작성자" required>
+      <!-- ✅ 숨겨진 수정 폼 -->
+      <form method="post"
+            action="{{ url_for('post.edit_comment', comment_id=comment.id) }}"
+            id="edit-form-{{ comment.id }}"
+            class="edit-comment-form comment-form"
+            style="display: none;">
+         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+         <textarea name="new_content" rows="3" placeholder="댓글을 수정하세요">{{ comment.content }}</textarea>
+  <br>
+         <button type="submit" class="btn btn-sm">💾 저장</button>
+         <button type="button" class="btn btn-sm" onclick="toggleEditForm({{ comment.id }})">취소</button>
+       </form>
 
-      <label for="content">내용</label>
-      <textarea name="content" rows="4" placeholder="댓글을 입력하세요" required></textarea>
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="comment-empty">💬 아직 댓글이 없습니다.</p>
+{% endif %}
 
-      <button type="submit" class="btn">댓글 등록</button>
-    </form>
-  </div>
+<div class="comment-form">
+  <h4>댓글 작성하기</h4>
+  {% if current_user.is_authenticated %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="author" value="{{ current_user.username }}">
+
+    <label for="author">작성자</label>
+    <input type="text" value="{{ current_user.username }}" readonly>
+
+    <label for="content">내용</label>
+    <textarea name="content" rows="4" placeholder="댓글을 입력하세요" required></textarea>
+
+    <button type="submit" class="btn">댓글 등록</button>
+  </form>
+{% else %}
+  <p>💬 댓글을 작성하려면 <a href="/login">로그인</a>해주세요.</p>
+{% endif %}
+ </div>
 </div>
+
+<!-- ✅ JS: 수정폼 토글 스크립트 -->
+<script>
+  function toggleEditForm(commentId) {
+    const form = document.getElementById('edit-form-' + commentId);
+    if (form) {
+      form.style.display = form.style.display === 'none' || form.style.display === '' ? 'block' : 'none';
+    }
+  }
+</script>
+
 
 <style>
   .zoomable {

@@ -3,77 +3,283 @@
 {% block title %}🛡 관리자 페이지{% endblock %}
 
 {% block head_scripts %}
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Toastr -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
 <style>
-  h2, h3 { margin-top: 2rem; }
+  /* 탭 스타일 */
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1;
+    font-size: 15px;
+    text-align: center;
+    padding: 6px 0;
+    background-color: #e0e0e0;
+    color: #333;
+    font-weight: 200;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .tab:hover {
+    background-color: #d5d5d5;
+    color: #000;
+  }
+
+  .tab.active {
+    background-color: #4a4a4a;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* 폼 스타일 */
+  .form-category {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .form-input,
+  .form-select {
+    width: 200px;
+    padding: 6px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+
+  /* 버튼 스타일 */
+  .btn {
+    padding: 6px 10px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-delete { background-color: #cc4444; }
+  .btn-delete:hover { background-color: #a33; }
+
+  .btn-approve { background-color: #5cb85c; }
+  .btn-approve:hover { background-color: #4cae4c; }
+
+  .btn-reject { background-color: #f0ad4e; }
+  .btn-reject:hover { background-color: #ec971f; }
+
+  .btn-danger {
+    background-color: #cc4444;
+    padding: 8px 14px;
+    margin-top: 10px;
+  }
+  .btn-danger:hover { background-color: #a33; }
+
+  /* 표 스타일 */
   table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 1rem;
   }
+
   th, td {
     padding: 8px;
     border: 1px solid #ddd;
     text-align: center;
   }
+
   th {
     background-color: #f0f0f0;
   }
-  a { text-decoration: none; color: #333; }
-  .btn-delete {
-    padding: 6px 12px;
-    background-color: #cc4444;
-    color: white;
-    border: none;
-    cursor: pointer;
-    margin-bottom: 2rem;
-  }
-  .btn-delete:hover {
-    background-color: #a33;
-  }
-  .back-link {
-    margin-top: 3rem;
-    display: inline-block;
-  }
-  .admin-actions {
-    margin-bottom: 1rem;
-  }
-  .admin-actions a {
-    margin-right: 1rem;
-    font-weight: bold;
+
+  a {
+    text-decoration: none;
     color: #007bff;
   }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  td.actions-cell {
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .action-group {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .action-group form {
+    display: inline;
+  }
+
+  .action-group button {
+    white-space: nowrap;
+  }
+
+   .tab-content {
+    display: none;
+  }
+
+
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-container">
-  <h2>🛡 관리자 전용 페이지</h2>
+  <h2>🔐 관리자 전용 페이지</h2>
 
-  <div class="admin-actions">
-    <a href="{{ url_for('admin.change_password') }}">🔑 비밀번호 변경</a>
-    <a href="{{ url_for('post.index', category='자유게시판', page=1) }}">📝 게시판 보기</a>
-    <a href="{{ url_for('home') }}">🏠 홈으로</a>
+  <!-- 탭 메뉴 -->
+  <div class="tabs">
+    <div class="tab active" data-tab="boards" onclick="switchTab(event)">게시판 추가</div>
+    <div class="tab" data-tab="posts" onclick="switchTab(event)">게시글 관리</div>
+    <div class="tab" data-tab="comments" onclick="switchTab(event)">댓글 관리</div>
+    <div class="tab" data-tab="users" onclick="switchTab(event)">회원 관리</div>
   </div>
 
-  <!-- 📂 게시판 필터 -->
-  <form method="get" style="margin-bottom: 1rem;">
-    <label>📂 게시판 선택:</label>
-    <select name="category" onchange="this.form.submit()">
-      <option value="전체" {% if selected_category == '전체' %}selected{% endif %}>전체</option>
-      {% for cat in categories %}
-        <option value="{{ cat.name }}" {% if selected_category == cat.name %}selected{% endif %}>{{ cat.name }}</option>
-      {% endfor %}
-    </select>
-  </form>
+  <!-- 📌 게시판 관리 탭 -->
+  <div id="boards" class="tab-content">
+    <h3>➕ 게시판 추가</h3>
+    <form method="post" action="{{ url_for('admin.add_category') }}" class="form-category">
+      {{ add_form.hidden_tag() }}
+      <input type="text" name="category_name" placeholder="새 게시판 이름" required class="form-input" />
+      <select name="category_type" required class="form-select">
+        <option value="text">📝 일반 게시판</option>
+        <option value="photo">📷 사진 게시판</option>
+      </select>
+      <button type="submit" class="btn-approve">추가</button>
+    </form>
 
-  <h3>📂 {{ selected_category }} {% if selected_category != '전체' %}게시판{% endif %}</h3>
-
-  <!-- 📄 게시글 목록 -->
-  <form method="post" action="{{ url_for('post.bulk_delete') }}">
+    <h3>📋 게시판 목록</h3>
     <table>
       <thead>
         <tr>
-          <th><input type="checkbox" onclick="toggleAll(this, 'post_ids')"></th>
+          <th>ID</th>
+          <th>게시판 이름</th>
+          <th>타입</th>
+          <th>삭제</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in categories %}
+        <tr>
+          <td>{{ c.id }}</td>
+          <td>{{ c.name }}</td>
+          <td>{{ c.type }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.delete_category') }}" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+              {{ delete_form.hidden_tag() }}
+              <input type="hidden" name="category_id" value="{{ c.id }}">
+              <button type="submit" class="btn-delete">삭제</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">게시판이 없습니다.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h3>🛠 게시판 타입 수정</h3>
+    <form method="post" action="{{ url_for('admin.edit_category') }}">
+      {{ edit_form.hidden_tag() }}
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <select name="category_id" required class="form-select">
+          {% for c in categories %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+        <select name="category_type" required class="form-select">
+          <option value="text">📝 일반</option>
+          <option value="photo">📷 사진</option>
+        </select>
+        <button type="submit" class="btn btn-approve">수정</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 다른 탭들 (posts, comments, users)은 이후에 이어서 추가 가능 -->
+</div>
+
+
+{% block scripts %}
+<script>
+  function switchTab(event) {
+    const selectedTab = event.target.getAttribute('data-tab');
+
+    // 탭 콘텐츠 전환
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.getElementById(selectedTab).style.display = 'block';
+
+    // 탭 버튼 스타일 전환
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // URL에 탭 정보 저장
+    const url = new URL(window.location);
+    url.searchParams.set('tab', selectedTab);
+    window.history.replaceState({}, '', url);
+  }
+</script>
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab') || 'boards'; // 기본값은 'boards'
+
+    // 탭 콘텐츠 표시
+    document.querySelectorAll('.tab-content').forEach(el => {
+      el.style.display = el.id === tab ? 'block' : 'none';
+    });
+
+    // 탭 버튼 활성화
+    document.querySelectorAll('.tab').forEach(el => {
+      el.classList.toggle('active', el.getAttribute('data-tab') === tab);
+    });
+  });
+</script>
+{% endblock %}
+
+<!-- 📝 게시글 관리 탭 -->
+<div id="posts" class="tab-content" style="display:none;">
+
+  <!-- 📂 게시판 필터 -->
+  <form method="get" action="{{ request.path }}">
+  <input type="hidden" name="tab" value="posts">
+
+  <label>📂 게시판 선택:</label>
+  <select name="category" onchange="this.form.submit()" class="form-select">
+    <option value="전체" {% if selected_category == '전체' %}selected{% endif %}>전체</option>
+    {% for cat in categories %}
+      <option value="{{ cat.name }}" {% if selected_category == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+  <h3>📂 {{ selected_category }} {% if selected_category != '전체' %}게시판{% endif %}</h3>
+
+  <h3>📝 게시글 목록</h3>
+  <form method="post" action="{{ url_for('admin.bulk_action') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" onclick="toggleAllByName(this, 'post_ids')"></th>
           <th>ID</th>
           <th>제목</th>
           <th>작성자</th>
@@ -83,120 +289,125 @@
       <tbody>
         {% for post in posts %}
         <tr>
-          <td><input type="checkbox" name="post_ids" value="{{ post.id }}" class="post_ids"></td>
+          <td><input type="checkbox" name="post_ids" value="{{ post.id }}"></td>
           <td>{{ post.id }}</td>
           <td><a href="{{ url_for('post.detail', post_id=post.id) }}">{{ post.title }}</a></td>
-          <td>{{ post.author }}</td>
-          <td>{{ post.date }}</td>
+          <td>{{ post.author.username }}</td>
+          <td>{{ post.date.strftime('%Y-%m-%d %H:%M') }}</td>
         </tr>
         {% else %}
         <tr><td colspan="5">게시글이 없습니다.</td></tr>
         {% endfor %}
       </tbody>
     </table>
-    <button type="submit" class="btn-delete" onclick="return confirm('선택한 게시글을 삭제할까요?')">🗑️ 선택 삭제</button>
-  </form>
-
-  <hr>
-
-  <!-- 💬 댓글 관리 -->
-  <section>
-    <h3>💬 댓글 관리</h3>
-    <form method="post" action="{{ url_for('post.bulk_delete_comment') }}">
-      <table>
-        <thead>
-          <tr>
-            <th><input type="checkbox" onclick="toggleAll(this, 'comment_ids')"></th>
-            <th>ID</th>
-            <th>글ID</th>
-            <th>작성자</th>
-            <th>내용</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in comments %}
-          <tr>
-            <td><input type="checkbox" name="comment_ids" value="{{ c.id }}" class="comment_ids"></td>
-            <td>{{ c.id }}</td>
-            <td>{{ c.post_id }}</td>
-            <td>{{ c.author }}</td>
-            <td style="text-align:left;">{{ c.content[:40] }}{% if c.content|length > 40 %}...{% endif %}</td>
-          </tr>
-          {% else %}
-          <tr><td colspan="5">댓글이 없습니다.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <button type="submit" class="btn-delete" onclick="return confirm('선택한 댓글을 삭제할까요?')">🗑️ 선택 삭제</button>
-    </form>
-  </section>
-
-  <br>
-  <a href="{{ url_for('post.index', category='자유게시판', page=1) }}" class="back-link">← 게시판으로 돌아가기</a>
-
-  <!-- ➕ 게시판 추가 -->
-  <h3>➕ 게시판 추가</h3>
-  <form method="post" action="{{ url_for('admin.add_category') }}">
-    <input type="text" name="category_name" placeholder="새 게시판 이름" required />
-    <select name="category_type" required>
-      <option value="text">일반 게시판</option>
-      <option value="photo">사진 게시판</option>
+    <select name="action" class="form-select">
+      <option value="">작업 선택</option>
+      <option value="delete_posts">🗑️ 선택 삭제</option>
     </select>
-    <button type="submit">추가</button>
-  </form>
-
-  <!-- ➖ 게시판 삭제 -->
-  <h3>➖ 게시판 삭제</h3>
-  <form method="post" action="{{ url_for('admin.delete_category') }}">
-    <select name="category_id" required>
-      {% for c in categories %}
-        <option value="{{ c.id }}">{{ c.name }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" onclick="return confirm('삭제하시겠습니까?')">삭제</button>
-  </form>
-
-  <!-- 🛠 게시판 타입 수정 -->
-  <h3>🛠 게시판 타입 수정</h3>
-  <form method="post" action="{{ url_for('admin.edit_category') }}">
-    <select name="category_id" required>
-      {% for c in categories %}
-        <option value="{{ c.id }}">{{ c.name }}</option>
-      {% endfor %}
-    </select>
-    <select name="category_type" required>
-      <option value="text">📝 일반</option>
-      <option value="photo">📷 사진</option>
-    </select>
-    <button type="submit">수정</button>
+    <button type="submit" class="btn-delete" onclick="return confirm('선택한 게시글을 처리할까요?')">적용</button>
   </form>
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-  function toggleAll(source, className) {
-    const checkboxes = document.querySelectorAll('input.' + className);
-    checkboxes.forEach(cb => cb.checked = source.checked);
-  }
+<!-- 💬 댓글 관리 탭 -->
+<div id="comments" class="tab-content" style="display:none;">
 
-  document.addEventListener('DOMContentLoaded', function () {
-    let lastChecked = null;
-    document.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
-      checkbox.addEventListener('click', function (e) {
-        const name = checkbox.className;
-        if (e.shiftKey && lastChecked && this !== lastChecked && this.className === lastChecked.className) {
-          const checkboxes = Array.from(document.querySelectorAll('input.' + name));
-          const start = checkboxes.indexOf(lastChecked);
-          const end = checkboxes.indexOf(this);
-          const [min, max] = [Math.min(start, end), Math.max(start, end)];
-          for (let i = min; i <= max; i++) {
-            checkboxes[i].checked = lastChecked.checked;
-          }
-        }
-        lastChecked = this;
-      });
-    });
-  });
-</script>
+  <!-- 📂 댓글 필터 -->
+  <form method="get" action="{{ request.path }}">
+    <input type="hidden" name="tab" value="comments">
+
+    <label>📂 게시판 선택:</label>
+    <select name="category" onchange="this.form.submit()" class="form-select">
+      <option value="전체" {% if selected_category == '전체' %}selected{% endif %}>전체</option>
+      {% for cat in categories %}
+        <option value="{{ cat.name }}" {% if selected_category == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <h3>📂 {{ selected_category }} {% if selected_category != '전체' %}게시판{% endif %}</h3>
+
+  <h3>💬 댓글 목록</h3>
+  <form method="post" action="{{ url_for('admin.bulk_action') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" onclick="toggleAllByName(this, 'comment_ids')"></th>
+          <th>ID</th>
+          <th>글ID</th>
+          <th>작성자</th>
+          <th>내용</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in comments %}
+        <tr>
+          <td><input type="checkbox" name="comment_ids" value="{{ c.id }}"></td>
+          <td>{{ c.id }}</td>
+          <td>{{ c.post_id }}</td>
+          <td>{{ c.author.username }}</td>
+          <td>{{ c.content[:40] }}{% if c.content|length > 40 %}...{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">댓글이 없습니다.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <select name="action" class="form-select">
+      <option value="">작업 선택</option>
+      <option value="delete_comments">🗑️ 선택 삭제</option>
+    </select>
+    <button type="submit" class="btn-delete" onclick="return confirm('선택한 댓글을 처리할까요?')">적용</button>
+  </form>
+</div>
+
+<!-- 🧑‍🤝‍🧑 회원 관리 탭 -->
+<div id="users" class="tab-content" style="display:none;">
+  <h3>🧑‍🤝‍🧑 회원 목록</h3>
+  <select id="bulk-action" class="form-input">
+    <option value="">처리 선택</option>
+    <option value="approve">승인</option>
+    <option value="reject">승인 취소</option>
+    <option value="set_admin">관리자 지정</option>
+    <option value="unset_admin">관리자 해제</option>
+    <option value="delete">회원 삭제</option>
+  </select>
+  <button type="button" onclick="applyBulkAction()">적용</button>
+
+  <form id="delete-form" method="POST" action="{{ url_for('admin.delete_users') }}">
+    {{ delete_users_form.hidden_tag() }}
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" onclick="toggleAllByName(this, 'delete_ids')"></th>
+          <th>ID</th>
+          <th>사용자명</th>
+          <th>이메일</th>
+          <th>가입일</th>
+          <th>관리자</th>
+          <th>승인 여부</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr id="user-row-{{ user.id }}">
+          <td><input type="checkbox" name="delete_ids" value="{{ user.id }}"></td>
+          <td>{{ user.id }}</td>
+          <td>{{ user.username }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+          <td id="admin-status-{{ user.id }}">{{ '관리자' if user.is_admin else '일반' }}</td>
+          <td id="approval-status-{{ user.id }}">
+            {% if user.is_approved %}
+            <span>승인됨</span>
+            {% else %}
+            <span>대기 중</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+</div>
 {% endblock %}

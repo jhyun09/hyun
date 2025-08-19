@@ -87,5 +87,5 @@ def parse_board_xml(file_path, category):
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-        parse_board_xml("module_happy.000001.xml", "쭈야랑게시판") 
+        parse_board_xml("module_happy.000001.xml", "쭈야게시판") 
         db.session.commit()

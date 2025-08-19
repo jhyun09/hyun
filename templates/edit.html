@@ -1,91 +1,95 @@
-
-  <meta charset="UTF-8">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <script src="https://cdn.ckeditor.com/ckeditor5/41.1.0/classic/ckeditor.js"></script>
-
- 
-
 {% extends "base.html" %}
 
 {% block title %}{{ post.title }}{% endblock %}
 {% block body_class %}{{ 'photo-background' if is_gallery_category else '' }}{% endblock %}
 
+{% block head_scripts %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.ckeditor.com/ckeditor5/41.1.0/classic/ckeditor.js"></script>
+{% endblock %}
+
 {% block content %}
+<div class="qa-write">
+  <h2>✏️ 글 수정</h2>
 
+  <form method="POST" action="{{ url_for('post.edit', post_id=post.id) }}" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
 
-  <div class="qa-write">
-    <h2>✏️ 글 수정</h2>
+    <label for="title">제목</label>
+    {{ form.title(id="title", class="form-control", required=true) }}
 
-    <form method="POST" action="{{ url_for('post.edit', post_id=post.id) }}">
-      <label for="title">제목</label>
-      <input type="text" name="title" id="title" value="{{ post.title }}" required>
+    <label for="author">작성자</label>
+    {{ post.author.username }}
 
-      <label for="author">작성자</label>
-      <input type="text" name="author" id="author" value="{{ post.author }}" required>
+    <label for="content">내용</label>
+    <textarea name="content" id="editor">{{ post.content|safe }}</textarea>
 
-      <label for="content">내용</label>
-      <textarea name="content" id="editor">{{ post.content|safe }}</textarea>
+    <label for="image">이미지 첨부</label>
+    {{ form.image() }}
 
-      <button type="submit" class="btn">수정 완료</button>
-    </form>
+    <label for="attachment">기타 첨부파일 (ZIP, AI, EPS 등)</label>
+    {{ form.attachment(class="form-control") }}
 
-    <div class="action-back">
-      <a href="{{ url_for('post.detail', post_id=post.id) }}">← 돌아가기</a>
-    </div>
+    <label for="bgm">배경음악 업로드 (MP3)</label>
+    {{ form.bgm() }}
+    
+
+    <button type="submit" class="btn">수정 완료</button>
+  </form>
+
+  <div class="action-back">
+    <a href="{{ url_for('post.detail', post_id=post.id) }}">← 돌아가기</a>
   </div>
+</div>
+{% endblock %}
 
-  <script>
-  let editorInstance;
+{% block scripts %}
+<script>
+let editorInstance;
 
-  ClassicEditor
-  .create(document.querySelector('#editor'), {
-    ckfinder: {
-      uploadUrl: "{{ url_for('post.upload_image') }}"
-    }
-  })
+ClassicEditor
+  .create(document.querySelector('#editor'))
+  .then(editor => {
+    editorInstance = editor;
 
-    .then(editor => {
-      editorInstance = editor;
+    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+      return {
+        upload: () => {
+          return loader.file.then(file => {
+            const data = new FormData();
+            data.append('image', file);
 
-      // 이미지 업로드 커스터마이징
-      editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
-        return {
-          upload: () => {
-            return new Promise((resolve, reject) => {
-              const data = new FormData();
-              loader.file.then(file => {
-                data.append('upload', file);
-                fetch("{{ url_for('post.upload_image') }}", {
-                  method: 'POST',
-                  body: data
-                })
-                .then(response => response.json())
-                .then(result => {
-                  if (result.url) {
-                    resolve({ default: result.url });
-                  } else {
-                    reject(result.error?.message || '업로드 실패');
-                  }
-                })
-                .catch(() => reject('서버와 통신 오류'));
-              });
-            });
-          }
-        };
-      };
-
-      // 글 저장 시 에디터 내용 반영
-      document.querySelector('form').addEventListener('submit', (e) => {
-        const content = editorInstance.getData().trim();
-        if (!content) {
-          alert("내용을 입력해주세요!");
-          e.preventDefault();
-          return;
+            return fetch("{{ url_for('post.upload_image') }}", {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+              },
+              body: data
+            })
+            .then(response => response.json())
+            .then(result => {
+              if (result.url) {
+                return { default: result.url };
+              } else {
+                return Promise.reject(result.error?.message || '업로드 실패');
+              }
+            })
+            .catch(() => Promise.reject('서버와 통신 오류'));
+          });
         }
-        document.querySelector('#editor').value = content;
-      });
-    })
-    .catch(error => console.error("🛑 CKEditor 초기화 실패:", error));
-</script>
+      };
+    };
 
+    document.querySelector('form').addEventListener('submit', (e) => {
+      const content = editorInstance.getData().trim();
+      if (!content) {
+        alert("내용을 입력해주세요!");
+        e.preventDefault();
+        return;
+      }
+      document.querySelector('#editor').value = content;
+    });
+  })
+  .catch(error => console.error("🛑 CKEditor 초기화 실패:", error));
+</script>
 {% endblock %}

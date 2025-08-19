@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>Post Board of All</title>
+  <title>All My Posts</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
     body {
@@ -88,11 +88,12 @@
   <p>관리자 여부: {{ session.get('is_admin') }}</p>
   <a href="{{ url_for('static', filename='memorys/story1.htm') }}" target="_blank" class="link-white">🏠 추억</a>
 
-  <header>📋 Post Board of All</header>
+  <header>📋 All My Posts</header>
 
   <div class="auth">
     {% if session.get('user_id') %}
       <span>안녕하세요, {{ session.get('username') or '회원' }}님</span>
+      <a href="{{ url_for('account.edit_account') }}">🛠️ 계정수정</a>
       <a href="{{ url_for('auth.logout') }}">🔓 로그아웃</a>
       {% if session.get('is_admin') %}
         <a href="{{ url_for('admin.admin_dashboard') }}" class="admin-btn" style="color: #f44; font-weight: bold; margin-left: 1rem;">🛠 관리자 페이지</a>
@@ -104,16 +105,17 @@
     {% endif %}
   </div>
 
-  <h1>어서오세요, 당신의 이야기를 담아보세요 ✨</h1>
+  <h2>우리가족의, 혹은 나, 그리고 친구들의 이야기를 담아보자! ✨</h2>
 
   {% set icon_map = {
-    '자유게시판': '📝',
-    '이야기게시판': '📚',
-    '사진게시판': '📸',
-    '습작게시판': '🖋️',
-    '쭈야랑게시판': '💕',
-    '우리게시판': '🖋️',
-    '우리사진': '📸'
+    '자유 게시판': '📝',
+    '이야기 게시판': '📚',
+    '사진 게시판': '📸',
+    '습작 게시판': '🖋️',
+    '쭈야 게시판': '💕',
+    'New 게시판': '🖋️',
+    '자료실': '💾',
+    'We 사진': '📸'
   } %}
 
   <!-- 🆕 새로 만든 게시판 먼저 표시 -->
@@ -133,7 +135,7 @@
   {% if session.get('user_id') and default_categories %}
     <h2 style="margin-top: 3rem;">📂 옛날 복구 게시판</h2>
     <div class="board-links">
-      {% for name in ['자유게시판', '이야기게시판', '사진게시판', '습작게시판', '쭈야랑게시판'] %}
+      {% for name in ['자유 게시판', '이야기 게시판', '사진 게시판', '습작 게시판', '쭈야 게시판'] %}
         {% for cat in default_categories if cat.name == name %}
           <a href="{{ url_for('post.index', category=cat.name) }}">
             <span class="emoji-badge">{{ icon_map.get(cat.name, '📌') }}</span> {{ cat.name }}

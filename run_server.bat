@@ -1,5 +1,5 @@
 @echo off
-cd /d D:\myboard\parsing
+cd /d D:\myhome\parsing
 call venv\Scripts\activate
 python app.py
 pause

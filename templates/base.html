@@ -72,20 +72,22 @@
       <a href="{{ url_for('home') }}">🏠 MAIN</a>
     </div>
     <div class="header-center">
-      <a href="{{ url_for('post.index', category='자유게시판', page=1) }}">📝 FREE</a>
-      <a href="{{ url_for('post.index', category='이야기게시판', page=1) }}">📖 STORYS</a>
-      <a href="{{ url_for('post.index', category='사진게시판', page=1) }}">📸 PHOTOS</a>
-      <a href="{{ url_for('post.index', category='습작게시판', page=1) }}">📸  ETUDE</a>
-      <a href="{{ url_for('post.index', category='쭈야랑게시판', page=1) }}">💕 JJUYA</a>
+      <a href="{{ url_for('post.index', category='자유 게시판', page=1) }}">📝 FREE</a>
+      <a href="{{ url_for('post.index', category='이야기 게시판', page=1) }}">📖 STORYS</a>
+      <a href="{{ url_for('post.index', category='사진 게시판', page=1) }}">📸 PHOTOS</a>
+      <a href="{{ url_for('post.index', category='습작 게시판', page=1) }}">📸  ETUDE</a>
+      <a href="{{ url_for('post.index', category='쭈야 게시판', page=1) }}">💕 JJUYA</a>
       <span style="padding: 0 10px; font-weight: bold;">l</span>
-      <a href="{{ url_for('post.index', category='우리게시판', page=1) }}">🖋️N Free</a>
-      <a href="{{ url_for('post.index', category='우리사진', page=1) }}">📸N photos</a>
+      <a href="{{ url_for('post.index', category='New 게시판', page=1) }}">🖋️N Free</a>
+      <a href="{{ url_for('post.index', category='We 사진', page=1) }}">📸N photos</a>
     </div>
     <div class="header-right">
       {% if session.get('user_id') %}
+      <span style="color:#ccc;">👤 {{ current_user.username }}</span>
+      <a href="{{ url_for('account.edit_account') }}">🛠️ 계정수정</a> 
         <a href="{{ url_for('auth.logout') }}">🚪 로그아웃</a>
         {% if session.get('is_admin') %}
-          <a href="{{ url_for('admin.admin_dashboard') }}" style="color:#ffc107;">🛡 관리자페이지</a>
+          <a href="{{ url_for('admin.admin_dashboard') }}" style="color:#ffc107;">⚙️ 관리자페이지</a>
         {% endif %}
       {% else %}
         <a href="{{ url_for('auth.login', next=request.url) }}">🔐 로그인</a>
@@ -98,6 +100,7 @@
     {% block content %}{% endblock %}
   </div>
 
+   
   <!-- 🧠 JS 초기화 블록 (CKEditor, 기타 스크립트) -->
   {% block scripts %}{% endblock %}
 </body>

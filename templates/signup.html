@@ -39,7 +39,8 @@
     }
 
     .signup-box input[type="text"],
-    .signup-box input[type="password"] {
+    .signup-box input[type="password"],
+    .signup-box input[type="email"] {
       padding: 0.8rem;
       margin-bottom: 1rem;
       border: none;
@@ -66,12 +67,19 @@
     .message {
       margin-top: 1rem;
       color: #ffcccb;
+      font-size: 0.9rem;
+    }
+
+    .info-text {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: #ccc;
     }
 
     .back-link {
-      margin-top: 1rem;
+      margin-top: 1.2rem;
       display: block;
-      color: #ccc;
+      color: #bbb;
       text-decoration: none;
       font-size: 0.9rem;
     }
@@ -85,9 +93,11 @@
   <div class="signup-box">
     <h2>📝 회원가입</h2>
     <form method="POST" action="{{ url_for('auth.signup') }}">
-      <input type="text" name="username" placeholder="사용자명" required>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="username" placeholder="사용자명 (닉네임 또는 아이디)" required>
+      <input type="email" name="email" placeholder="이메일 주소" required>
       <input type="password" name="password" placeholder="비밀번호" required>
-      <input type="password" name="password_confirm" placeholder="비밀번호 확인" required>
+      <input type="password" name="confirm" placeholder="비밀번호 확인" required>
       <button type="submit">가입하기</button>
     </form>
 
@@ -95,6 +105,15 @@
       {% if messages %}
         {% for category, message in messages %}
           <div class="message">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+        {% endfor %}
+      {% endif %}
     {% endwith %}
+
+    <p class="info-text">
+      가입 후 관리자의 승인을 거쳐야 로그인할 수 있습니다.
+    </p>
+
+    <a class="back-link" href="{{ url_for('auth.login') }}">이미 가입하셨나요? 로그인하기 →</a>
+  </div>
+</body>
+</html>
