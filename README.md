@@ -22,4 +22,4 @@
 git clone https://github.com/jhyun09/hyun.git
 cd rainhyun-board
 pip install -r requirements.txt
-python app.py
+python app.py# hyun
